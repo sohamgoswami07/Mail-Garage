@@ -53,10 +53,13 @@
         {% for item in page_obj %}
         <a href="email/{{item.id}}/" class="template-card bg-white rounded-md overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md animate-fade-in cursor-pointer" style="animation-delay: 0ms; animation-fill-mode: forwards;">
             <div class="relative overflow-hidden">
-                <img
-                    src="{{ item.email_body.url }}"
-                    class="w-full aspect-[3/4] object-cover object-center bg-gray-100"
-                />
+                {% if email_image %}
+                    <img src="{{ item.email_body.url }}" alt="Email Attachment">
+                {% elif email_content %}
+                    <div>{{ email_content|safe }}</div>
+                {% else %}
+                    <p>No content available.</p>
+                {% endif %}
             </div>
             
             <div class="p-3">

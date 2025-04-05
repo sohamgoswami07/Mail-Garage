@@ -4,6 +4,7 @@ from .models import *
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.core.paginator import Paginator
+from cloudinary.uploader import upload
 import os
 
 # Create your views here.
@@ -27,13 +28,13 @@ import os
 
 #     return render(request, 'login/login.html')
 
-def home(request): 
+def home(request):
+    # Fetch all emails
+    email_list = EmailDetail.objects.all().order_by('id')
+
     # Get filter parameters from the request
     selected_category = request.GET.get('category', None)
     selected_type = request.GET.get('type', None)
-
-    # Fetch all emails
-    email_list = EmailDetail.objects.all().order_by('id')
 
     # Filter based on category if selected
     if selected_category:
@@ -52,8 +53,21 @@ def home(request):
     page_number = request.GET.get('page')  # Get the current page number
     page_obj = paginator.get_page(page_number)
 
+    email_body_file = email_list.FILES['email_body']
+    file_extension = os.path.splitext(email_body_file.name)[1].lower()  # Get file extension
+
+    email_content = ""
+    email_image = None
+
+    if file_extension in [".jpg", ".jpeg", ".png"]:
+        # Handle image file upload to Cloudinary
+        email_image = upload(email_body_file, resource_type="image")['secure_url']  # Get the Cloudinary URL for the image
+    elif file_extension in [".html", ".htm"]:
+        # Handle HTML file upload
+        email_content = email_body_file.read().decode("utf-8")
+
     # Pass page_obj, categories, and types to the template for rendering
-    return render(request, 'home/home.html', {'page_obj': page_obj, 'selected_category': selected_category, 'selected_type': selected_type, 'categories': categories, 'types': types})
+    return render(request, 'home/home.html', {'page_obj': page_obj, 'selected_category': selected_category, 'selected_type': selected_type, 'categories': categories, 'types': types, 'email_image': email_image, 'email_content': email_content})
 
 def brand(request):
     brand_list = BrandDetail.objects.all().order_by('id') # fetch all emails
@@ -90,12 +104,6 @@ def blogs(request):
 
     # Pass page_obj to the template for rendering
     return render(request, 'blogs/blogs.html', {'blogs_list': blogs_list, 'page_obj': page_obj})
-
-def email_detail(request, id):
-    from django.shortcuts import render, get_object_or_404
-from .models import EmailDetail
-from cloudinary.uploader import upload
-import os
 
 def email_detail(request, id):
     email = get_object_or_404(EmailDetail, id=id)
