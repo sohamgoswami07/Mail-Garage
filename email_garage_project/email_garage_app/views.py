@@ -92,26 +92,35 @@ def blogs(request):
     return render(request, 'blogs/blogs.html', {'blogs_list': blogs_list, 'page_obj': page_obj})
 
 def email_detail(request, id):
+    from django.shortcuts import render, get_object_or_404
+from .models import EmailDetail
+from cloudinary.uploader import upload
+import os
+
+def email_detail(request, id):
     email = get_object_or_404(EmailDetail, id=id)
 
     email_content = ""
     email_image = None
 
-    if email.email_body:
-        file_path = email.email_body.path # Get the file path
-        file_extension = os.path.splitext(file_path)[1].lower()  # Get file extension
+    if request.method == "POST" and request.FILES.get('email_body'):
+        # Handle file upload
+        email_body_file = request.FILES['email_body']
+        file_extension = os.path.splitext(email_body_file.name)[1].lower()  # Get file extension
 
         if file_extension in [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg"]:
-            # If the file is an image, pass its URL to the template
-            email_image = email.email_body.url  # URL to be used in frontend
+            # Handle image file upload to Cloudinary
+            email_image = upload(email_body_file, resource_type="image")['secure_url']  # Get the Cloudinary URL for the image
+            email.email_body = email_image  # You can store the URL in your model, or you may want to use CloudinaryField
         elif file_extension in [".html", ".htm"]:
-            # If the file is an HTML file, read its content
-            try:
-                with open(file_path, "r", encoding="utf-8") as file:
-                    email_content = file.read()
-            except Exception as e:
-                print(f"Error reading file: {e}")
+            # Handle HTML file upload
+            email_content = email_body_file.read().decode("utf-8")
+            email.email_body = upload(email_body_file, resource_type="raw")['secure_url']  # Upload to Cloudinary as raw
 
+        # Save email to update the file path
+        email.save()
+
+    # Render the email details
     return render(request, "email_detail/email_detail.html", {"email": email, "email_content": email_content, "email_image": email_image})
 
 def blog_detail(request, id):
