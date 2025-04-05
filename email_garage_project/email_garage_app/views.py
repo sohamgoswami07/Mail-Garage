@@ -108,7 +108,7 @@ def email_detail(request, id):
         email_body_file = request.FILES['email_body']
         file_extension = os.path.splitext(email_body_file.name)[1].lower()  # Get file extension
 
-        if file_extension in [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg"]:
+        if file_extension in [".jpg", ".jpeg", ".png"]:
             # Handle image file upload to Cloudinary
             email_image = upload(email_body_file, resource_type="image")['secure_url']  # Get the Cloudinary URL for the image
             email.email_body = email_image  # You can store the URL in your model, or you may want to use CloudinaryField
